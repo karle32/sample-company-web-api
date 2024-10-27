@@ -33,67 +33,99 @@ namespace WebApi.Controllers
         }
 
         // POST api/<controller>
-        public bool Post([FromBody] CompanyDto companyDto)
+        [Route("api/company")]
+        [HttpPost]
+        public IHttpActionResult Post([FromBody] CompanyDto companyDto)
         {
             try
             {
                 if (companyDto == null)
                 {
-                    throw new ArgumentNullException(nameof(companyDto), "Company data must not be null.");
+                    return BadRequest("Company data must not be null.");
                 }
 
                 var compnayInfo = _mapper.Map<CompanyInfo>(companyDto);
-                return _companyService.SaveCompany(compnayInfo);
+                bool isSaved = _companyService.SaveCompany(compnayInfo);
+
+                if (isSaved)
+                {
+                    return Ok("Company saved successfully");
+                }
+                else
+                {
+                    return BadRequest("Failed to save the company");
+                }
             }
             catch (Exception ex)
             {
-                // Implement a Logger: Logger.LogError(ex, "An error occurred while deleting the company.");
-                throw new InvalidOperationException("An error occurred while saving the company.", ex);
+                // Log the exception here
+                // Logger.LogError(ex, "An error occurred while saving the company.");
+                return InternalServerError(new Exception("An error has occurred on the server. Please try again later. ", ex));
             }
         }
 
         // PUT api/<controller>/5
-        public bool Put(string companyCode, [FromBody]CompanyDto companyDto)
+        [Route("api/company/{companyCode}")]
+        [HttpPut]
+        public IHttpActionResult Put(string companyCode, [FromBody]CompanyDto companyDto)
         {
             try
             {
-                if (companyDto == null)
-                {
-                    throw new ArgumentNullException(nameof(companyDto), "Company data must not be null.");
-                }
+                if (companyDto == null) return BadRequest("Company data must not be Null");
 
                 var existingCompany = _companyService.GetCompanyByCode(companyCode);
                 if (existingCompany == null)
                 {
-                    throw new InvalidOperationException($"Company with code {companyCode} not found.");
+                    return NotFound();
                 }
 
                 // Map updated values
                 var companyInfo = _mapper.Map(companyDto, existingCompany);
-                return _companyService.SaveCompany(companyInfo);
+                var isSaved = _companyService.SaveCompany(companyInfo);
+
+                if (isSaved)
+                {
+                    return Ok("Company updated successfully");
+                }
+                else
+                {
+                    return BadRequest("Company update failed");
+                }
+                
             }
             catch (Exception ex)
             {
                 // Consider logging the exception here
-                throw new InvalidOperationException("An error occurred while updating the company.", ex);
+                return InternalServerError(new InvalidOperationException("An error occurred while updating the company.", ex));
             }
         }
 
         // DELETE api/<controller>/5
-        public bool Delete(string companyCode)
+        [Route("api/company/{companyCode}")]
+        [HttpDelete]
+        public IHttpActionResult Delete(string companyCode)
         {
             try
             {
                 var company = _companyService.GetCompanyByCode(companyCode);
-                if (company == null)  return false;
-                
-                return _companyService.DeleteCompany(company);
+                if (company == null)  return NotFound();
 
+                var isDeleted = _companyService.DeleteCompany(company);
+                if (isDeleted)
+                {
+                    return Ok("Company deleted successfully");
+                }
+                else
+                {
+                    return BadRequest("Failed to delete the company");
+                }
             }
             catch (Exception ex)
             {
-                // Implement a Logger: Logger.LogError(ex, "An error occurred while deleting the company.");
-                throw new InvalidOperationException("An error occurred while deleting the company.", ex);
+                // Log the exception here.
+                // Logger.LogError(ex, "An error occurred while deleting the company.");
+                // Return a custom 500 error message
+                return InternalServerError(new Exception("An error has occurred on the server. Please try again later.", ex));
             }
         }
     }
