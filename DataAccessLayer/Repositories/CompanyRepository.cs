@@ -12,7 +12,7 @@ namespace DataAccessLayer.Repositories
 	    public CompanyRepository(IDbWrapper<Company> companyDbWrapper)
 	    {
 		    _companyDbWrapper = companyDbWrapper;
-        }
+        }        
 
         public IEnumerable<Company> GetAll()
         {
@@ -44,6 +44,20 @@ namespace DataAccessLayer.Repositories
             }
 
             return _companyDbWrapper.Insert(company);
+        }
+
+        public bool DeleteCompany(Company company)
+        {
+            var companyToDelete = _companyDbWrapper.Find(t =>
+                t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode))?.FirstOrDefault();
+
+            if (companyToDelete != null)
+            {
+                return _companyDbWrapper.Delete(t =>
+                t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode));
+            }
+            return false;
+
         }
     }
 }
