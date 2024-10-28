@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using BusinessLayer.Model.Interfaces;
@@ -19,113 +20,88 @@ namespace WebApi.Controllers
             _mapper = mapper;
         }
         // GET api/<controller>
-        public IEnumerable<CompanyDto> GetAll()
+        public async Task<IEnumerable<CompanyDto>> GetAll()
         {
-            var items = _companyService.GetAllCompanies();
+            var items = await _companyService.GetAllCompaniesAsync();
             return _mapper.Map<IEnumerable<CompanyDto>>(items);
         }
 
         // GET api/<controller>/5
-        public CompanyDto Get(string companyCode)
+        public async Task<CompanyDto> Get(string companyCode)
         {
-            var item = _companyService.GetCompanyByCode(companyCode);
+            var item = await _companyService.GetCompanyByCodeAsync(companyCode);
             return _mapper.Map<CompanyDto>(item);
         }
 
         // POST api/<controller>
         [Route("api/company")]
         [HttpPost]
-        public IHttpActionResult Post([FromBody] CompanyDto companyDto)
+        public async Task<string> Post([FromBody] CompanyDto companyDto)
         {
             try
             {
                 if (companyDto == null)
                 {
-                    return BadRequest("Company data must not be null.");
+                    return "BadRequest: Company data must not be null.";
                 }
 
                 var compnayInfo = _mapper.Map<CompanyInfo>(companyDto);
-                bool isSaved = _companyService.SaveCompany(compnayInfo);
+                bool result = await _companyService.SaveCompanyAsync(compnayInfo);
 
-                if (isSaved)
-                {
-                    return Ok("Company saved successfully");
-                }
-                else
-                {
-                    return BadRequest("Failed to save the company");
-                }
+                return result ? "Company saved successfully." : "Error: An error occurred while saving the company.";
             }
             catch (Exception ex)
             {
-                // Log the exception here
-                // Logger.LogError(ex, "An error occurred while saving the company.");
-                return InternalServerError(new Exception("An error has occurred on the server. Please try again later. ", ex));
+                // Log exception (ex)
+                return "Error: An error occurred while processing your request.";
             }
         }
 
         // PUT api/<controller>/5
         [Route("api/company/{companyCode}")]
         [HttpPut]
-        public IHttpActionResult Put(string companyCode, [FromBody]CompanyDto companyDto)
+        public async Task<string> Put(string companyCode, [FromBody]CompanyDto companyDto)
         {
             try
             {
-                if (companyDto == null) return BadRequest("Company data must not be Null");
+                if (companyDto == null) return "BadRequest: Company data must not be null.";
 
-                var existingCompany = _companyService.GetCompanyByCode(companyCode);
+                var existingCompany = await _companyService.GetCompanyByCodeAsync(companyCode);
                 if (existingCompany == null)
                 {
-                    return NotFound();
+                    return $"NotFound: Company with code {companyCode} not found.";
                 }
 
                 // Map updated values
                 var companyInfo = _mapper.Map(companyDto, existingCompany);
-                var isSaved = _companyService.SaveCompany(companyInfo);
+                bool result = await _companyService.SaveCompanyAsync(companyInfo);
 
-                if (isSaved)
-                {
-                    return Ok("Company updated successfully");
-                }
-                else
-                {
-                    return BadRequest("Company update failed");
-                }
-                
+                return result ? "Company updated successfully." : "Error: An error occurred while updating the company.";
             }
             catch (Exception ex)
             {
-                // Consider logging the exception here
-                return InternalServerError(new InvalidOperationException("An error occurred while updating the company.", ex));
+                // Log exception (ex)
+                return "Error: An error occurred while processing your request.";
             }
         }
 
         // DELETE api/<controller>/5
         [Route("api/company/{companyCode}")]
         [HttpDelete]
-        public IHttpActionResult Delete(string companyCode)
+        public async Task<string>Delete(string companyCode)
         {
             try
             {
-                var company = _companyService.GetCompanyByCode(companyCode);
-                if (company == null)  return NotFound();
+                var company = await _companyService.GetCompanyByCodeAsync(companyCode);
+                if (company == null) return $"NotFound: Company with code {companyCode} not found.";
 
-                var isDeleted = _companyService.DeleteCompany(company);
-                if (isDeleted)
-                {
-                    return Ok("Company deleted successfully");
-                }
-                else
-                {
-                    return BadRequest("Failed to delete the company");
-                }
+                bool result = await _companyService.DeleteCompanyAsync(company);
+                return result ? "Company deleted successfully." : "Error: An error occurred while deleting the company.";
             }
             catch (Exception ex)
             {
-                // Log the exception here.
-                // Logger.LogError(ex, "An error occurred while deleting the company.");
-                // Return a custom 500 error message
-                return InternalServerError(new Exception("An error has occurred on the server. Please try again later.", ex));
+                // Log exception (ex)
+                return "Error: An error occurred while processing your request.";
             }
         }
     }

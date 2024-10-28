@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Threading.Tasks;
 using DataAccessLayer.Model.Interfaces;
 using DataAccessLayer.Model.Models;
 
@@ -14,20 +16,23 @@ namespace DataAccessLayer.Repositories
 		    _companyDbWrapper = companyDbWrapper;
         }        
 
-        public IEnumerable<Company> GetAll()
+        public async Task<IEnumerable<Company>> GetAllAsync()
         {
-            return _companyDbWrapper.FindAll();
+            return await _companyDbWrapper.FindAllAsync();
         }
 
-        public Company GetByCode(string companyCode)
+        public async Task<Company> GetByCodeAsync(string companyCode)
         {
-            return _companyDbWrapper.Find(t => t.CompanyCode.Equals(companyCode))?.FirstOrDefault();
+            var result = await _companyDbWrapper.FindAsync(t => t.CompanyCode.Equals(companyCode));
+            return result?.FirstOrDefault();
         }
 
-        public bool SaveCompany(Company company)
+        public async Task<bool> SaveCompanyAsync(Company company)
         {
-            var itemRepo = _companyDbWrapper.Find(t =>
-                t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode))?.FirstOrDefault();
+            var items = await _companyDbWrapper.FindAsync(t =>
+                t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode));
+            var itemRepo = items?.FirstOrDefault();
+
             if (itemRepo !=null)
             {
                 itemRepo.CompanyName = company.CompanyName;
@@ -40,23 +45,25 @@ namespace DataAccessLayer.Repositories
                 itemRepo.PhoneNumber = company.PhoneNumber;
                 itemRepo.PostalZipCode = company.PostalZipCode;
                 itemRepo.LastModified = company.LastModified;
-                return _companyDbWrapper.Update(itemRepo);
+                return await _companyDbWrapper.UpdateAsync(itemRepo);
             }
 
-            return _companyDbWrapper.Insert(company);
+            return await _companyDbWrapper.InsertAsync(company);
         }
 
-        public bool DeleteCompany(Company company)
+        public async Task<bool> DeleteCompanyAsync(Company company)
         {
-            var companyToDelete = _companyDbWrapper.Find(t =>
-                t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode))?.FirstOrDefault();
+            var companies = await _companyDbWrapper.FindAsync(t =>
+                t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode));
+
+            var companyToDelete = companies?.FirstOrDefault();
 
             if (companyToDelete != null)
             {
-                return _companyDbWrapper.Delete(t =>
+                return await _companyDbWrapper.DeleteAsync(t =>
                 t.SiteId.Equals(company.SiteId) && t.CompanyCode.Equals(company.CompanyCode));
             }
-            return false;
+            return await Task.FromResult(false);
 
         }
     }
