@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using BusinessLayer.Model.Interfaces;
 using BusinessLayer.Model.Models;
+using Serilog;
 using WebApi.Models;
 
 namespace WebApi.Controllers
@@ -20,88 +22,142 @@ namespace WebApi.Controllers
             _mapper = mapper;
         }
         // GET api/<controller>
-        public async Task<IEnumerable<CompanyDto>> GetAll()
+        [HttpGet]
+        [Route("")]
+        public async Task<IHttpActionResult> GetAll()
         {
-            var items = await _companyService.GetAllCompaniesAsync();
-            return _mapper.Map<IEnumerable<CompanyDto>>(items);
+            try
+            {
+                var companies = await _companyService.GetAllCompaniesAsync();
+                return Ok(_mapper.Map<IEnumerable<CompanyDto>>(companies));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error occurred while retrieving all companies.");
+                return InternalServerError(ex);
+            }
         }
 
         // GET api/<controller>/5
-        public async Task<CompanyDto> Get(string companyCode)
+        [HttpGet]
+        [Route("{companyCode}")]
+        public async Task<IHttpActionResult> Get(string companyCode)
         {
-            var item = await _companyService.GetCompanyByCodeAsync(companyCode);
-            return _mapper.Map<CompanyDto>(item);
+            try
+            {
+                var company = await _companyService.GetCompanyByCodeAsync(companyCode);
+                if (company == null)
+                {
+                    Log.Warning("Company with code {CompanyCode} not found.", companyCode);
+                    return NotFound();
+                }
+                return Ok(_mapper.Map<CompanyDto>(company));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error occurred while retrieving company by code {CompanyCode}", companyCode);
+                return InternalServerError(ex);
+            }
         }
 
         // POST api/<controller>
         [Route("api/company")]
         [HttpPost]
-        public async Task<string> Post([FromBody] CompanyDto companyDto)
+        public async Task<IHttpActionResult> Post([FromBody] CompanyDto companyDto)
         {
             try
             {
+
                 if (companyDto == null)
                 {
-                    return "BadRequest: Company data must not be null.";
+                    Log.Warning("Invalid company data submitted.");
+                    return BadRequest("Company data must not be null.");
                 }
 
-                var compnayInfo = _mapper.Map<CompanyInfo>(companyDto);
-                bool result = await _companyService.SaveCompanyAsync(compnayInfo);
+                var companyInfo = _mapper.Map<CompanyInfo>(companyDto);
+                bool result = await _companyService.SaveCompanyAsync(companyInfo);
 
-                return result ? "Company saved successfully." : "Error: An error occurred while saving the company.";
+                if (result)
+                {
+                    return Ok("Company saved successfully.");
+                }
+                else
+                {
+                    return StatusCode(HttpStatusCode.InternalServerError);
+                }
             }
             catch (Exception ex)
             {
-                // Log exception (ex)
-                return "Error: An error occurred while processing your request.";
+                Log.Error(ex, "Error occurred while saving company.");
+                return InternalServerError(ex);
             }
         }
 
         // PUT api/<controller>/5
         [Route("api/company/{companyCode}")]
         [HttpPut]
-        public async Task<string> Put(string companyCode, [FromBody]CompanyDto companyDto)
+        public async Task<IHttpActionResult> Put(string companyCode, [FromBody]CompanyDto companyDto)
         {
             try
             {
-                if (companyDto == null) return "BadRequest: Company data must not be null.";
+                if (companyDto == null)
+                {
+                    Log.Warning("Invalid company data submitted.");
+                    return BadRequest("Company data must not be null.");
+                }
 
                 var existingCompany = await _companyService.GetCompanyByCodeAsync(companyCode);
                 if (existingCompany == null)
                 {
-                    return $"NotFound: Company with code {companyCode} not found.";
+                    Log.Warning("Company with code {CompanyCode} not found.", companyCode);
+                    return NotFound();
                 }
 
-                // Map updated values
                 var companyInfo = _mapper.Map(companyDto, existingCompany);
                 bool result = await _companyService.SaveCompanyAsync(companyInfo);
 
-                return result ? "Company updated successfully." : "Error: An error occurred while updating the company.";
+                if (result) {
+                    return Ok("Company updated successfully.");
+                }
+                else {
+                    return StatusCode(HttpStatusCode.InternalServerError);
+                }
             }
             catch (Exception ex)
             {
-                // Log exception (ex)
-                return "Error: An error occurred while processing your request.";
+                Log.Error(ex, "Error occurred while updating company with code {CompanyCode}", companyCode);
+                return InternalServerError(ex);
             }
         }
 
         // DELETE api/<controller>/5
         [Route("api/company/{companyCode}")]
         [HttpDelete]
-        public async Task<string>Delete(string companyCode)
+        public async Task<IHttpActionResult>Delete(string companyCode)
         {
             try
             {
                 var company = await _companyService.GetCompanyByCodeAsync(companyCode);
-                if (company == null) return $"NotFound: Company with code {companyCode} not found.";
+                if (company == null)
+                {
+                    Log.Warning("Company with code {CompanyCode} not found.", companyCode);
+                    return NotFound();
+                }
 
                 bool result = await _companyService.DeleteCompanyAsync(company);
-                return result ? "Company deleted successfully." : "Error: An error occurred while deleting the company.";
+                if (result)
+                {
+                    return Ok("Company updated successfully.");
+                }
+                else
+                {
+                    return StatusCode(HttpStatusCode.InternalServerError);
+                }
             }
             catch (Exception ex)
             {
-                // Log exception (ex)
-                return "Error: An error occurred while processing your request.";
+                Log.Error(ex, "Error occurred while deleting company with code {CompanyCode}", companyCode);
+                return InternalServerError(ex);
             }
         }
     }

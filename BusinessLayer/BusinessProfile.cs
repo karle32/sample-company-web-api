@@ -15,6 +15,7 @@ namespace BusinessLayer
         {
             CreateMap<DataEntity, BaseInfo>().ReverseMap();
             CreateMap<Company, CompanyInfo>().ReverseMap();
+            CreateMap<Company, CompanyInfo>().ReverseMap();
             CreateMap<ArSubledger, ArSubledgerInfo>().ReverseMap();
         }
     }

@@ -42,11 +42,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Interfaces\ICompanyService.cs" />
+    <Compile Include="Interfaces\IEmployeeService.cs" />
     <Compile Include="Models\ArSubledgerInfo.cs" />
     <Compile Include="Models\BaseInfo.cs" />
     <Compile Include="Models\CompanyInfo.cs" />
+    <Compile Include="Models\EmployeeInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\DataLayer.Model\DataAccessLayer.Model.csproj">
+      <Project>{44867C7E-02D8-40A2-B2C4-0463F31B945E}</Project>
+      <Name>DataAccessLayer.Model</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
